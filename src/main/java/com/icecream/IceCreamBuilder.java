@@ -1,6 +1,7 @@
 package com.icecream;
 
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
 
@@ -59,7 +60,7 @@ public class IceCreamBuilder {
                 } else {
                     System.out.println("Invalid choice. Please try again.");
                 }
-            } catch (Exception e) {
+            } catch (InputMismatchException e) {
                 System.out.println("Invalid input. Please enter a number.");
                 scanner.nextLine(); // consume invalid input
             }
@@ -84,7 +85,7 @@ public class IceCreamBuilder {
                 } else {
                     System.out.println("Invalid choice. Please try again.");
                 }
-            } catch (Exception e) {
+            } catch (InputMismatchException e) {
                 System.out.println("Invalid input. Please enter a number.");
                 scanner.nextLine(); // consume invalid input
             }

@@ -2,6 +2,7 @@
 # Compile the Ice Cream Builder application
 
 echo "Compiling Ice Cream Builder..."
+mkdir -p bin
 javac -d bin src/main/java/com/icecream/*.java
 
 if [ $? -eq 0 ]; then
