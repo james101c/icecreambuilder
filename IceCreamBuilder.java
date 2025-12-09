@@ -8,7 +8,14 @@ import java.util.*;
  * filename: IceCreadBuilder.java
  */
 public class  IceCreamBuilder {
-
+    public static int getValidatedIntInput(Scanner scanner) {
+        if (scanner.hasNextInt()) {
+            return scanner.nextInt();
+        } else {
+            scanner.next(); // consume invalid input
+            return -99;
+        }
+    }
     public static void main(String[] args) {
         Scanner input = new Scanner(System.in);
         String[] errorMessages = new String[100];
@@ -34,12 +41,30 @@ public class  IceCreamBuilder {
              if (!iceCream.hasFlavor()) {
                 System.out.println(printFlavorOptions(intToFlavor));
                 System.out.print("Enter your choice:");
-                int choice = input.nextInt();
+                int choice = getValidatedIntInput(input); //input.nextInt();
                 if (intToFlavor.containsKey(choice)) {
                     iceCream.addFlavor(intToFlavor.get(choice), 1);
-                    System.out.println("Your Ice Cream is : " + iceCream.flavor);
-                    System.out.println("Now choose an ingredient to add to your ice cream:" + printToppingAndSouceOptions(iceCream));
-                    choice =  input.nextInt();
+                    System.out.print("Your Ice Cream is : " + iceCream.flavor + " with " + iceCream.getCurrentFlaverCount() + " scoop(s). ");
+                    if (iceCream.getSauce() != null) {
+                        System.out.print(" with "+ iceCream.currentSauceCount() + " " + iceCream.getSauce() + " Souce ");
+                    } else {
+                        System.out.print(" with 0 Souces and ");
+                    }
+                    if (iceCream.getToppings() != null) {
+                        System.out.println(" and " + iceCream.getToppings() + " Toppings.");
+                    } else {
+                        System.out.println(" and 0 Toppings.");
+                    }
+                    int maxToppings = iceCream.maxToppings();
+                    int currentToppings = iceCream.getCurrentToppingsCount();
+                    int availableToppings = maxToppings - currentToppings;
+                    System.out.println("Now choose up to " + availableToppings + " items to add to your ice cream:");
+                    printToppingAndSauceOptions(iceCream);
+
+                    // System.out.println("You have selected " + intToFlavor.get(choice) + " flavor(s).");
+                     // display list of ingredients
+
+                    choice =  getValidatedIntInput(input); // input.nextInt();
                 } else {
                     System.out.println("Invalid Choice! Enter a number between 1 and " + intToFlavor.size());
                 }
@@ -52,7 +77,7 @@ public class  IceCreamBuilder {
                  }
                  //prompt user to make a choice
                  System.out.print("Enter your choice:");
-                 int choice = input.nextInt();
+                 int choice =  getValidatedIntInput(input); //input.nextInt();
 
                  //validate the user input
                  if(choice >= 1 && choice <= ingredients.length){
@@ -88,13 +113,21 @@ public class  IceCreamBuilder {
 
         input.close();
     }
-    private static String printToppingAndSouceOptions(IceCream myIcream) {
-        int totalToppings = myIcream.getCurrentToppingsCount();
-        int totalScoops = myIcream.getCurrentFlaverCount();
-        int maxToppings = myIcream.maxToppings;
-        int availableToppings = maxToppings - totalToppings - totalScoops;
+    private static String printToppingAndSauceOptions(IceCream myIcecream) {
+        int totalToppings = myIcecream.getCurrentToppingsCount();
+        int totalScoops = myIcecream.getCurrentFlaverCount();
+        int maxToppings = myIcecream.maxToppings;
+        int availableToppings = maxToppings - totalToppings;
 
         StringBuilder sb = new StringBuilder();
+        int scoopLimit = maxToppings - myIcecream.getLimit(myIcecream.getFlavor());
+        int availableScoopCount = Math.min(availableToppings, scoopLimit);
+        // System.out.println(" You can add more toppings. You have " + availableToppings + " topping slots left.");
+        int currentOptionToChoose = 1;
+        for(int i = currentOptionToChoose; i < availableScoopCount; i++){
+            System.out.println( currentOptionToChoose  +") scoop(s) of " + myIcecream.getFlavor() + " to your order." );
+            currentOptionToChoose++;
+        }
         for(int i = 0; i < totalToppings; i++){}
         sb.append("1 - SPRINKLES\n");
         sb.append("2 - CHERRIES\n");
@@ -122,8 +155,8 @@ public class  IceCreamBuilder {
         private int maxToppings = 0;
         private int maxSause = 0;
         private int maxFlavor =0;
-        private int currentToppings = 0;
-        private int currentSause = 0;
+        private int currentToppingsCount = 0;
+        private int currentSauceCount = 0;
         private int currentFlaverCount = 0;
 
         public IceCream(Map<Enum,Integer> inLimits, int inMaxToppings) {
@@ -132,6 +165,29 @@ public class  IceCreamBuilder {
             /*this.maxToppings = (int) limits.get(Topping.CHERRIES);
             this.maxSause = (int) limits.get(Sauce.HOT_FUDGE);
             this.maxFlavor = (int) limits.get(Flavor.VANILLA); */
+        }
+        public int maxToppings() {
+            return maxToppings;
+        }
+        public Flavor getFlavor() {
+            return flavor;
+        }
+        public Sauce getSauce() {
+            return sauce;
+        }
+
+        public int currentSauceCount() {
+            return currentSauceCount;
+        }
+
+        public int getLimit(Enum key) {
+            System.out.println("Enume key: " + key);
+            if (limits.containsKey(key)) {
+                return (int) limits.get(key);
+            } else {
+                return -99;
+            }
+
         }
         public Topping[] getToppings() {
             return topping;
@@ -143,7 +199,7 @@ public class  IceCreamBuilder {
         public boolean hasFlavor(){
             return this.flavor != null;
         }
-        public int getCurrentToppingsCount(){return currentToppings + currentToppings + currentSause; }
+        public int getCurrentToppingsCount(){return currentToppingsCount + currentFlaverCount + currentSauceCount; }
 
         public void addTopping(Topping[] inTopping, int count) {
             if(count + getCurrentToppingsCount() > this.maxToppings) {
@@ -152,27 +208,27 @@ public class  IceCreamBuilder {
             }
             else{
                 this.topping = inTopping;
-                this.currentToppings += count;
+                this.currentToppingsCount += count;
             }
         }
-        public void addSause( Sauce inSause, int count) {
+        public void addSause( Sauce inSauce, int count) {
             if(count + getCurrentToppingsCount() > this.maxSause) {
-                System.out.println("Cannot add more than " + maxSause + " sause of " + inSause);
+                System.out.println("Cannot add more than " + maxSause + " sause of " + inSauce);
                 return;
             } else {
-                this.sauce = inSause;
-                this.currentSause = count;
+                this.sauce = inSauce;
+                this.currentSauceCount = count;
             }
         }
         public void addFlavor(Flavor inFlavor, int count) {
             this.flavor = inFlavor;
-            if(count + getCurrentToppingsCount() > this.maxFlavor) {
+            this.currentFlaverCount += count;
+            if(count + getCurrentFlaverCount() > this.limits.get(flavor)) {
 
                 System.out.println("Cannot add more than " + maxFlavor + " flavor of " + inFlavor);
+                this.currentFlaverCount -= count;
+                this.flavor = null;
                 return;
-            } else {
-                this.flavor = inFlavor;
-                this.currentFlaverCount = count;
             }
         }
     }
