@@ -18,7 +18,7 @@ public class  IceCreamBuilder {
         Map<Integer, Sauce> intToSauce = configureIntToSauce();
         Map<Enum, Object> shortCuts = configureShortCuts();
         Map<Enum, Integer> limits = configureLimits();
-        IceCream iceCream = new IceCream(limits);
+        IceCream iceCream = new IceCream(limits, 6);
 
 
         //create an array for ice cream ingredients
@@ -126,7 +126,7 @@ public class  IceCreamBuilder {
         private int currentSause = 0;
         private int currentFlaverCount = 0;
 
-        public IceCream(Map<Enum,Iterator> inLimits, int inMaxToppings) {
+        public IceCream(Map<Enum,Integer> inLimits, int inMaxToppings) {
             this.limits = inLimits;
             this.maxToppings = inMaxToppings;
             /*this.maxToppings = (int) limits.get(Topping.CHERRIES);
