@@ -7,6 +7,7 @@ import java.util.*;
  * and sauces while enforcing limits on each category.
  * filename: IceCreadBuilder.java
  */
+
 public class  IceCreamBuilder {
     public static int getValidatedIntInput(Scanner scanner) {
         if (scanner.hasNextInt()) {
@@ -14,6 +15,98 @@ public class  IceCreamBuilder {
         } else {
             scanner.next(); // consume invalid input
             return -99;
+        }
+    }
+    public static String makeDicription(int inOptionNumber, Enum inType, int inCount) {
+        if (inType instanceof Flavor) {
+            return inOptionNumber + ") make it " + inCount + " scoop(s) of " + inType + " for your dish.";
+        } else if( inType instanceof Sauce) {
+            return inOptionNumber + ") add " + inCount + " tablespoon of " + inType + " to your dish.";
+        } else if ( inType == Topping.CHERRIES) {
+            return inOptionNumber + ") add " + inCount + " " + inType + " to your dish.";
+        }
+        return inOptionNumber + ") add " + inCount + " spoonful of " + inType + " to your order.";
+    }
+    public static Commands[] availableSaucePrintOptions(IceCream myIcecream, int inCurrentOptionToChoose) {
+        ArrayList<Commands> availableSauceOptions = new ArrayList<>();
+        int localOptionToChoose = inCurrentOptionToChoose;
+        int currentSauceCount = myIcecream.currentSauceCount();
+        int sauceIncrement =1;
+        if( myIcecream.getSauce() != null) {
+
+            int sauceLimit = myIcecream.getLimit(myIcecream.getSauce());
+            int availableSauceCount = Math.min(myIcecream.maxToppings - myIcecream.getCurrentToppingsCount(), sauceLimit);
+                sauceIncrement =1;
+            for(int i = 0; i < availableSauceCount; i++) {
+                String currentDescription =  makeDicription(localOptionToChoose,myIcecream.getSauce(),(currentSauceCount + sauceIncrement));
+                localOptionToChoose++;
+                availableSauceOptions.add( new Commands(localOptionToChoose, myIcecream.getSauce(), currentSauceCount + sauceIncrement,currentDescription));
+                sauceIncrement++;
+            }
+        }
+        else {
+            for(Sauce sauceOption : Sauce.values()) {
+                int sauceLimit = myIcecream.getLimit(sauceOption);
+                int availableSauceCount = Math.min(myIcecream.maxToppings - myIcecream.getCurrentToppingsCount(), sauceLimit);
+                sauceIncrement =1;
+                for(int i = 0; i < availableSauceCount; i++) {
+                    String currentDescription =  makeDicription(localOptionToChoose,sauceOption,(currentSauceCount + sauceIncrement));
+                    localOptionToChoose++;
+                    availableSauceOptions.add( new Commands(localOptionToChoose, sauceOption, currentSauceCount + sauceIncrement,currentDescription));
+                    sauceIncrement++;
+                }
+            }
+        }
+        return availableSauceOptions.toArray(new Commands[0]);
+    }
+    public static Commands[] availableTopicPrintOptions(IceCream myIcecream, int inCurrentOptionToChoose) {
+        ArrayList<Commands> availableToppingOptions = new ArrayList<>();
+        int localOptionToChoose = inCurrentOptionToChoose;
+
+        for(Topping toppingOption : Topping.values()) {
+            int toppingLimit = myIcecream.getLimit(toppingOption);
+            int availableToppingCount = Math.min(myIcecream.maxToppings - myIcecream.getCurrentToppingsCount(), toppingLimit);
+
+            int currentToppingCount = myIcecream.getToppingCount(toppingOption);
+          //  System.out.println(" This topping option: " + toppingOption +" available: " + availableToppingCount +" current: " + currentToppingCount);
+
+            int toppingIncrement =1;
+            for(int i = 0; i < availableToppingCount; i++) {
+
+                String currentDescription =  makeDicription(localOptionToChoose,toppingOption,(currentToppingCount + toppingIncrement));
+                localOptionToChoose++;
+                availableToppingOptions.add( new Commands(localOptionToChoose, toppingOption, currentToppingCount + toppingIncrement,currentDescription));
+                toppingIncrement++;
+            }
+        }
+        return availableToppingOptions.toArray(new Commands[0]);
+    }
+    public static String descibeIceCream(IceCream iceCream) {
+        StringBuilder description = new StringBuilder();
+        description.append("Ice Cream Flavor: ").append(iceCream.getFlavor()).append(" with ");
+        description.append(iceCream.getCurrentFlavorCount()).append(" Scoop(s): ").append(" ");
+        if(iceCream.getSauce() != null ) {
+            description.append("Sauce: ").append(iceCream.getSauce()).append(" (").append(iceCream.currentSauceCount()).append(") ");
+        } else {
+            description.append("Sauce: None ");
+        }
+        description.append("Toppings: ");
+        if (iceCream.getToppings() != null) {
+
+            for (Map.Entry<Enum, Integer> entry : iceCream.getToppings().entrySet()) {
+                 Topping key = (Topping) entry.getKey();
+                int value = entry.getValue();
+                description.append(key).append(" (").append(value).append(") ");
+                System.out.println(key + " -> " + value);
+            }
+        } else {
+            description.append("None");
+        }
+        return description.toString();
+    }
+    public static void displayCommandDescriptions(Commands[] commands) {
+        for (Commands command : commands) {
+            System.out.println(command.description);
         }
     }
     public static void main(String[] args) {
@@ -25,118 +118,160 @@ public class  IceCreamBuilder {
         Map<Integer, Sauce> intToSauce = configureIntToSauce();
         Map<Enum, Object> shortCuts = configureShortCuts();
         Map<Enum, Integer> limits = configureLimits();
+        Map<Enum, UnitType> unitTypes = configureUnitTypes();
         IceCream iceCream = new IceCream(limits, 6);
+        Map<Integer, Commands> commandStack;
 
 
         //create an array for ice cream ingredients
-        String[] ingredients = {"Vanilla", "Chocolate", "Strawberry", "Sprinkles", "Cherries", "Hot Fudge"};
-        ArrayList<String> recipe = new ArrayList<>();
+        //String[] ingredients = {"Vanilla", "Chocolate", "Strawberry", "Sprinkles", "Cherries", "Hot Fudge"};
+        //ArrayList<String> recipe = new ArrayList<>();
         char again; //for the repeating loop
 
 
 
         do {
-            // display list of ingredients
-
              if (!iceCream.hasFlavor()) {
                 System.out.println(printFlavorOptions(intToFlavor));
                 System.out.print("Enter your choice:");
                 int choice = getValidatedIntInput(input); //input.nextInt();
                 if (intToFlavor.containsKey(choice)) {
                     iceCream.addFlavor(intToFlavor.get(choice), 1);
-                    System.out.print("Your Ice Cream is : " + iceCream.flavor + " with " + iceCream.getCurrentFlaverCount() + " scoop(s). ");
-                    if (iceCream.getSauce() != null) {
-                        System.out.print(" with "+ iceCream.currentSauceCount() + " " + iceCream.getSauce() + " Souce ");
-                    } else {
-                        System.out.print(" with 0 Souces and ");
-                    }
-                    if (iceCream.getToppings() != null) {
-                        System.out.println(" and " + iceCream.getToppings() + " Toppings.");
-                    } else {
-                        System.out.println(" and 0 Toppings.");
-                    }
+                    System.out.println(descibeIceCream(iceCream));
                     int maxToppings = iceCream.maxToppings();
                     int currentToppings = iceCream.getCurrentToppingsCount();
                     int availableToppings = maxToppings - currentToppings;
                     System.out.println("Now choose up to " + availableToppings + " items to add to your ice cream:");
-                    printToppingAndSauceOptions(iceCream);
-
-                    // System.out.println("You have selected " + intToFlavor.get(choice) + " flavor(s).");
-                     // display list of ingredients
+                    Commands[] currentCommands= printToppingAndSauceOptions(iceCream);
+                    displayCommandDescriptions(currentCommands);
 
                     choice =  getValidatedIntInput(input); // input.nextInt();
+                    if(choice >= 1 && choice <= currentCommands.length){
+                        Commands selectedCommand = currentCommands[choice - 1];
+                        System.out.println("You chose " +selectedCommand.type + " x" + selectedCommand.count);
+                        //add to ice cream
+                        if(selectedCommand.type instanceof Topping){
+                            iceCream.addTopping((Topping) selectedCommand.type, selectedCommand.count);
+                            System.out.println(descibeIceCream(iceCream));
+                        }
+                        else if(selectedCommand.type instanceof Sauce){
+                            iceCream.addSauce((Sauce) selectedCommand.type, selectedCommand.count);
+                            System .out.println(selectedCommand.type + " added." + selectedCommand.count);
+                            System.out.println(descibeIceCream(iceCream));
+                        } else if(selectedCommand.type instanceof Flavor){
+                            iceCream.setScoops(selectedCommand.count);
+                            System.out.println(descibeIceCream(iceCream));
+                        }
+                    }
+                    else{
+                        System.out.println("Invalid Choice! Enter a number between 1 and " +currentCommands.length);
+                    }
                 } else {
                     System.out.println("Invalid Choice! Enter a number between 1 and " + intToFlavor.size());
                 }
             } else {
-                System.out.println("You have already selected a flavor: " + iceCream.flavor);
+               // System.out.println("You have already selected a flavor: " + iceCream.flavor);
                  // display list of ingredients
                  System.out.println("Choose an ingredient");
-                 for(int i = 0; i < ingredients.length; i++ ){
+                 /*for(int i = 0; i < ingredients.length; i++ ){
                      System.out.println((i+1) +"." +ingredients[i]);
-                 }
+                 }*/
                  //prompt user to make a choice
                  System.out.print("Enter your choice:");
-                 int choice =  getValidatedIntInput(input); //input.nextInt();
-
+                 //int choice =  getValidatedIntInput(input); //input.nextInt();
+                 int maxToppings = iceCream.maxToppings();
+                 int currentToppings = iceCream.getCurrentToppingsCount();
+                 int availableToppings = maxToppings - currentToppings;
+                 System.out.println("Now choose up to " + availableToppings + " items to add to your ice cream:");
+                 Commands[] currentCommands= printToppingAndSauceOptions(iceCream);
+                 displayCommandDescriptions(currentCommands);
+                 int choice = getValidatedIntInput(input);
+                 // choice =  getValidatedIntInput(input); // input.nextInt();
+                 if(choice >= 1 && choice <= currentCommands.length){
+                     Commands selectedCommand = currentCommands[choice - 1];
+                     System.out.println("You chose " +selectedCommand.type + " x" + selectedCommand.count);
+                     //add to ice cream
+                     if(selectedCommand.type instanceof Topping){
+                         iceCream.addTopping((Topping) selectedCommand.type, selectedCommand.count);
+                         System.out.println(descibeIceCream(iceCream));
+                     }
+                     else if(selectedCommand.type instanceof Sauce){
+                         iceCream.addSauce((Sauce) selectedCommand.type, selectedCommand.count);
+                         System .out.println(selectedCommand.type + " added." + selectedCommand.count);
+                         System.out.println(descibeIceCream(iceCream));
+                     } else if(selectedCommand.type instanceof Flavor){
+                         iceCream.setScoops(selectedCommand.count);
+                         System.out.println(descibeIceCream(iceCream));
+                     }
+                 }
+                 else{
+                     System.out.println("Invalid Choice! Enter a number between 1 and " +currentCommands.length);
+                 }
                  //validate the user input
-                 if(choice >= 1 && choice <= ingredients.length){
+                 /*if(choice >= 1 && choice <= ingredients.length){
                      System.out.println("You chose " +ingredients[choice - 1]);
                      recipe.add(ingredients[choice]);
                  }
                  else{
                      System.out.println("Invalid Choice! Enter a number between 1 and " +ingredients.length);
-                 }
+                 }*/
 
                  //prompt user to continue
 
             }
-            System.out.print("Add another ingredient? (Y/N): ");
-            again = input.next().charAt(0);
-            System.out.println();
-
+             if (iceCream.getCurrentToppingsCount() >= iceCream.maxToppings) {
+                 System.out.println("You have reached the maximum number of toppings/sauces for your ice cream.");
+                    again = 'N';
+             } else {
+                 System.out.print("Add another ingredient? (Y/N): ");
+                 again = input.next().charAt(0);
+                 System.out.println();
+             }
         } while(again == 'y' || again == 'Y');
 
         //print recipe
         System.out.println("Ice Cream Recipe: ");
+        System.out.println(descibeIceCream(iceCream));
 
-        //Make Loop to print recipe
-        if (recipe.isEmpty()){
-            System.out.println("No ingredients selected");
-        }
-        else{
-            for(int i = 0; i < recipe.size(); i++){
-                System.out.printf("%d. %s%n", i+1, recipe.get(i));
-            }
-        }
 
 
         input.close();
     }
-    private static String printToppingAndSauceOptions(IceCream myIcecream) {
+
+    private static Commands[] printToppingAndSauceOptions(IceCream myIcecream) {
         int totalToppings = myIcecream.getCurrentToppingsCount();
-        int totalScoops = myIcecream.getCurrentFlaverCount();
+        int totalScoops = myIcecream.getCurrentFlavorCount();
         int maxToppings = myIcecream.maxToppings;
         int availableToppings = maxToppings - totalToppings;
-
+        ArrayList<Commands> commandList = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         int scoopLimit = maxToppings - myIcecream.getLimit(myIcecream.getFlavor());
         int availableScoopCount = Math.min(availableToppings, scoopLimit);
-        // System.out.println(" You can add more toppings. You have " + availableToppings + " topping slots left.");
         int currentOptionToChoose = 1;
-        for(int i = currentOptionToChoose; i < availableScoopCount; i++){
-            System.out.println( currentOptionToChoose  +") scoop(s) of " + myIcecream.getFlavor() + " to your order." );
+        int scoopCount = myIcecream.getCurrentFlavorCount();
+        int scoupIncrement = scoopCount +1;
+
+        //scoop options
+        for(int i = scoopCount; i < availableScoopCount; i++){
+            String currentDescription =  makeDicription(currentOptionToChoose,myIcecream.getFlavor() ,scoupIncrement);
+            commandList.add(new Commands(i, myIcecream.getFlavor(), scoupIncrement, currentDescription));
+            scoupIncrement++;
             currentOptionToChoose++;
         }
-        for(int i = 0; i < totalToppings; i++){}
-        sb.append("1 - SPRINKLES\n");
-        sb.append("2 - CHERRIES\n");
-        sb.append("3 - CRUSHED_OREOS\n");
-        sb.append("1 - SPRINKLES\n");
-        sb.append("2 - CHERRIES\n");
-        sb.append("3 - CRUSHED_OREOS\n");
-        return sb.toString();
+        //sauce options
+
+        Commands[] souceCommands = availableSaucePrintOptions(myIcecream, currentOptionToChoose);
+        currentOptionToChoose = currentOptionToChoose + souceCommands.length;
+        commandList.addAll(Arrays.asList(souceCommands));
+
+        //topping options
+        Commands[] toppingCommands = availableTopicPrintOptions(myIcecream, currentOptionToChoose);
+        currentOptionToChoose = currentOptionToChoose + toppingCommands.length;
+        commandList.addAll(Arrays.asList(toppingCommands));
+
+        return commandList.toArray(new Commands[0]);
     }
+
     private static String printFlavorOptions(Map<Integer,Flavor> intToFlavor) {
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<Integer, Flavor> entry : intToFlavor.entrySet()) {
@@ -147,96 +282,90 @@ public class  IceCreamBuilder {
         }
         return sb.toString();
     }
-    static class IceCream {
+
+   public static class IceCream {
         private Flavor flavor;
-        private Topping[] topping;
+       // private Topping[] topping;
         private Map<Enum,Integer> limits;
+        private Map<Enum,Integer> toppingCounts;
         private Sauce sauce;
         private int maxToppings = 0;
         private int maxSause = 0;
         private int maxFlavor =0;
         private int currentToppingsCount = 0;
         private int currentSauceCount = 0;
-        private int currentFlaverCount = 0;
+        private int currentFlavorCount = 0;
 
         public IceCream(Map<Enum,Integer> inLimits, int inMaxToppings) {
             this.limits = inLimits;
             this.maxToppings = inMaxToppings;
-            /*this.maxToppings = (int) limits.get(Topping.CHERRIES);
-            this.maxSause = (int) limits.get(Sauce.HOT_FUDGE);
-            this.maxFlavor = (int) limits.get(Flavor.VANILLA); */
-        }
-        public int maxToppings() {
-            return maxToppings;
-        }
-        public Flavor getFlavor() {
-            return flavor;
-        }
-        public Sauce getSauce() {
-            return sauce;
+            this.toppingCounts = new HashMap<>();
         }
 
-        public int currentSauceCount() {
-            return currentSauceCount;
+        public int getToppingCount(Enum key) {
+            if (toppingCounts.containsKey(key)) {
+                return toppingCounts.get(key);
+            }
+            return 0;
         }
+        public int maxToppings() { return maxToppings;}
+        public Flavor getFlavor() { return flavor;}
+        public Sauce getSauce() { return sauce; }
+        public int currentSauceCount() { return currentSauceCount;}
 
         public int getLimit(Enum key) {
-            System.out.println("Enume key: " + key);
             if (limits.containsKey(key)) {
                 return (int) limits.get(key);
-            } else {
-                return -99;
-            }
+            } else { return -99; }
+        }
+        public Map<Enum,Integer>  getToppings() { return toppingCounts;}
+        public int getCurrentFlavorCount() { return currentFlavorCount; }
+        public boolean hasFlavor(){ return this.flavor != null; }
+        public int getCurrentToppingsCount(){return currentToppingsCount + currentFlavorCount + currentSauceCount; }
+
+        public void addTopping(Topping inTopping, int count) {
+                this.toppingCounts.put(inTopping, count);
+                this.currentToppingsCount = this.currentToppingsCount + count;
 
         }
-        public Topping[] getToppings() {
-            return topping;
-        }
-        public int getCurrentFlaverCount() {
-            return currentFlaverCount;
-        }
 
-        public boolean hasFlavor(){
-            return this.flavor != null;
-        }
-        public int getCurrentToppingsCount(){return currentToppingsCount + currentFlaverCount + currentSauceCount; }
-
-        public void addTopping(Topping[] inTopping, int count) {
-            if(count + getCurrentToppingsCount() > this.maxToppings) {
-                System.out.println("Cannot add more than " + maxToppings + " toppings of " + inTopping);
-                return;
-            }
-            else{
-                this.topping = inTopping;
-                this.currentToppingsCount += count;
-            }
-        }
-        public void addSause( Sauce inSauce, int count) {
-            if(count + getCurrentToppingsCount() > this.maxSause) {
-                System.out.println("Cannot add more than " + maxSause + " sause of " + inSauce);
-                return;
-            } else {
+        public void addSauce( Sauce inSauce, int count) {
                 this.sauce = inSauce;
                 this.currentSauceCount = count;
-            }
+        }
+        public void setScoops( int inCount) {
+            this.currentFlavorCount = inCount;
         }
         public void addFlavor(Flavor inFlavor, int count) {
             this.flavor = inFlavor;
-            this.currentFlaverCount += count;
-            if(count + getCurrentFlaverCount() > this.limits.get(flavor)) {
+            this.currentFlavorCount += count;
+            if(count + getCurrentFlavorCount() > this.limits.get(flavor)) {
 
                 System.out.println("Cannot add more than " + maxFlavor + " flavor of " + inFlavor);
-                this.currentFlaverCount -= count;
+                this.currentFlavorCount -= count;
                 this.flavor = null;
                 return;
             }
         }
     }
 
-    public enum Topping { SPRINKLES, CHERRIES, CRUSHED_OREOS }
+    public enum Topping { SPRINKLES, CRUSHED_OREOS, CHERRIES }
     public enum Sauce { HOT_FUDGE, CARAMEL_SAUCE }
     public enum ShortCuts {V,C,S,CH,SP,HF,CS,CO }
     public enum Flavor {VANILLA, CHOCOLATE, STRAWBERRY }
+    public enum UnitType { SCOOP, TOPPING, SAUCE }
+    public static Map configureUnitTypes() {
+        Map unitTypeMap = new HashMap<>();
+        unitTypeMap.put(Flavor.CHOCOLATE, UnitType.SCOOP);
+        unitTypeMap.put(Flavor.VANILLA, UnitType.SCOOP);
+        unitTypeMap.put(Flavor.STRAWBERRY, UnitType.SCOOP);
+        unitTypeMap.put(Topping.CHERRIES, UnitType.TOPPING);
+        unitTypeMap.put(Topping.SPRINKLES, UnitType.TOPPING);
+        unitTypeMap.put(Topping.CRUSHED_OREOS, UnitType.TOPPING);
+        unitTypeMap.put(Sauce.HOT_FUDGE, UnitType.SAUCE);
+        unitTypeMap.put(Sauce.CARAMEL_SAUCE, UnitType.SAUCE);
+        return unitTypeMap;
+    }
     public static Map configureLimits() {
         Map limitsMap = new HashMap<>();
         limitsMap.put(Topping.CHERRIES, 5);
@@ -280,5 +409,32 @@ public class  IceCreamBuilder {
         intToSauseMap.put(1, Sauce.HOT_FUDGE);
         intToSauseMap.put(2, Sauce.CARAMEL_SAUCE);
         return intToSauseMap;
+    }
+     static class ComamandDecorator {
+        Commands command;
+        String description;
+        ComamandDecorator(Commands inCommand, String inDescription) {
+            this.command = inCommand;
+            this.description = inDescription;
+        }
+
+         public Commands getCommand() {
+             return command;
+         }
+            public String getDescription() {
+                return description;
+            }
+     }
+    public static class Commands {
+        int id =0;
+        Enum type;
+        int count = 0;
+        String description;
+        Commands(int inID, Enum inType, int inCount, String inDescription) {
+            this.id = inID;
+            this.type = inType;
+            this.count = inCount;
+            this.description = inDescription;
+        }
     }
 }
